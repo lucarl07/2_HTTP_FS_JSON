@@ -7,6 +7,11 @@ const PORT = 5333;
 const server = http.createServer((req, res) => {
   const { method, url } = req;
 
+  // CORS:
+  res.setHeader("Access-Control-Allow-Origin", "*")
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+
   fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
     if (err) {
       res.writeHead(500, { "Content-Type": "application/json" })
@@ -239,6 +244,8 @@ const server = http.createServer((req, res) => {
     } else if (method === 'DELETE' && url.startsWith('/empregados/')) {
       console.log('DELETE /empregados/{id} 🏌️💫')
       res.end();
+    } else {
+      writeResponseJSON(404, { message: 'Nenhuma rota foi encontrada... ou você só queria verificar a raiz dessa API. Se sim, bem-vindo!' })
     }
   });
 })

@@ -1,5 +1,5 @@
 import http from 'node:http';
-import fs from 'node:fs';
+import fs, { write } from 'node:fs';
 import { URLSearchParams } from 'node:url';
 
 const PORT = 5333;
@@ -27,16 +27,16 @@ const server = http.createServer((req, res) => {
       console.error('Erro ao ler o arquivo jsonData =>' + error)
     }
 
-    const writeResponseJSON = (sttCode, output = '') => {
-      res.writeHead(sttCode, { "Content-Type": "application/json" }) 
+    const writeResponseJSON = (statusCode, output = '', message = 'Operação finalizada com sucesso!') => {
+      res.writeHead(statusCode, { "Content-Type": "application/json" }) 
 
-      if (sttCode === 500) {
+      if (statusCode === 500) {
         res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
         return console.log('Erro ao buscar os dados.');
       }
 
       res.end(JSON.stringify(output))
-      return console.log('Operação finalizada com sucesso!');
+      return console.log(message);
     }
 
     if (method === 'GET' && url === '/empregados') {
@@ -147,23 +147,15 @@ const server = http.createServer((req, res) => {
       console.log(`ID: ${id}`)
 
       fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
-        if (err) {
-          res.writeHead(500, {"Content-Type": "application/json"})
-          res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
-          return console.log('Erro ao buscar os dados.');
-        }
+        if (err) writeResponseJSON(500)
 
         const jsonData = JSON.parse(data)
         const empIndex = jsonData.findIndex(emp => emp.id === id);
 
         if (empIndex === -1) {
-          res.writeHead(404, {"Content-Type": "application/json"})
-          res.end(JSON.stringify({ message: 'Funcionário não encontrado.' }))
-          return console.log('Funcionário não encontrado.');
+          writeResponseJSON(404, { message: 'Funcionário não encontrado.' }, 'Funcionário não encontrado.')
         } else {
-          res.writeHead(200, {"Content-Type": "application/json"})
-          res.end(JSON.stringify(jsonData[empIndex]));
-          return console.log('Operação finalizada com sucesso!');
+          writeResponseJSON(200, jsonData[empIndex])
         }
       })
 

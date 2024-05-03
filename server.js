@@ -1,5 +1,6 @@
-import http from 'node:http'
-import fs from 'node:fs'
+import http from 'node:http';
+import fs from 'node:fs';
+import { URLSearchParams } from 'node:url';
 
 const PORT = 5333;
 
@@ -56,14 +57,99 @@ const server = http.createServer((req, res) => {
       })
 
     } else if (method === 'GET' && url.startsWith('/empregados/porCargo/')) {
-      console.log('GET /empregados/porCargo/{position} 💼')
-      res.end();
+      console.log('GET /empregados/porCargo/{work} 💼')
+      
+      const work = url.split('/')[3]
+      console.log(`Work: ${work}`);
+
+      fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
+        if (err) {
+          res.writeHead(500, { "Content-Type": "application/json" })
+          res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
+        }
+
+        const jsonData = JSON.parse(data)
+        const empByWork = jsonData.filter((emp) => emp.cargo === work);
+
+        if (empByWork.length === 0) {
+          res.writeHead(404, { "Content-Type": "application/json" })
+          res.end(JSON.stringify({ 
+            message: 'Nenhum funcionário com este cargo foi encontrado.' 
+          }))
+          return;
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" })
+        res.end(JSON.stringify(empByWork))
+      })
+
     } else if (method === 'GET' && url.startsWith('/empregados/porHabilidade/')) {
       console.log('GET /empregados/porHabilidade/{skill} 🧠')
-      res.end();
+      
+      const skill = url.split('/')[3]
+      console.log(`Skill: ${skill}`);
+
+      fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
+        if (err) {
+          res.writeHead(500, { "Content-Type": "application/json" })
+          res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
+        }
+
+        const jsonData = JSON.parse(data)
+        const empBySkill = jsonData.filter((emp) => {
+          const hasSkill = emp.habilidades.find(empSk => empSk === skill)
+          if (hasSkill) return emp;
+        });
+
+        if (empBySkill.length === 0) {
+          res.writeHead(404, { "Content-Type": "application/json" })
+          res.end(JSON.stringify({ 
+            message: 'Nenhum funcionário com esta habilidade foi encontrado.' 
+          }))
+          return;
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" })
+        res.end(JSON.stringify(empBySkill))
+      })
+
     } else if (method === 'GET' && url.startsWith('/empregados/porFaixaSalarial')) {
+      /** Requisições:
+       * body -> JSON -> POST
+       * Route PARAM -> porHabilidade/ValorEnviado -> PUT, DELETE, PATH, GET
+       * Query PARAM -> porFaixaSalarial?min={10}&max={20} -> 
+       */
       console.log('GET /empregados/porFaixaSalarial?min={min}&max={max} 💵')
-      res.end();
+      
+      const queryParams = new URLSearchParams(url.split('?')[1])
+      const minPay = queryParams.get('min'), maxPay = queryParams.get('max')
+      console.log(`Minimal pay: ${minPay} \nMaximum pay: ${maxPay}`)
+
+      fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
+        if (err) {
+          res.writeHead(500, {"Content-Type": "application/json"})
+          res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
+        }
+
+        const jsonData = JSON.parse(data);
+        const empOnRange = jsonData.filter(
+          (emp) => 
+            emp.salario >= minPay &&
+            emp.salario <= maxPay
+        );
+
+        if (empOnRange.length === 0) {
+          res.writeHead(404, { "Content-Type": "application/json" })
+          res.end(JSON.stringify({ 
+            message: 'Nenhum funcionário nesta faixa salarial foi encontrado.' 
+          }))
+          return;
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" })
+        res.end(JSON.stringify(empOnRange))
+      });
+
     } else if (method === 'GET' && url.startsWith('/empregados/')) {
       console.log('GET /empregados/{id} 👨‍💼');
 
@@ -105,7 +191,7 @@ const server = http.createServer((req, res) => {
         jsonData.push(newEmp)
 
         fs.writeFile('funcionarios.json', JSON.stringify(jsonData, null, 2),
-          (err) => {
+          (err, data) => {
             if (err) {
               res.writeHead(500, { "Content-Type": "application/json" })
               res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
@@ -121,9 +207,52 @@ const server = http.createServer((req, res) => {
 
     } else if (method === 'PUT' && url.startsWith('/empregados/')) {
       console.log('PUT /empregados/{id} 🗒️🖋️👨‍💼')
-      res.end();
+      
+      const id = parseInt(url.split('/')[2])
+      console.log(`ID: ${id}`)
+
+      let body = '';
+
+      req.on('data', (chunk) => body += chunk)
+      req.on('end', () => {
+        fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
+          if (err) {
+            res.writeHead(500, { "Content-Type": "application/json" })
+            res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
+            return console.log('Erro ao buscar os dados.');
+          }
+
+          const jsonData = JSON.parse(data);
+          const index = jsonData.findIndex(emp => emp.id === id)
+
+          if (index === -1) {
+            res.writeHead(404, { "Content-Type": "application/json" })
+            res.end(JSON.stringify({ message: 'Funcionário não encontrado.' }))
+          }
+
+          const updtEmp = JSON.parse(body)
+          jsonData[index] = {
+            ...jsonData[index], 
+            ...updtEmp, 
+            id: id,
+            cpf: jsonData[index].cpf
+          }
+
+          fs.writeFile('funcionarios.json', JSON.stringify(jsonData, null, 2), (err) => {
+            if (err) {
+              res.writeHead(500, { "Content-Type": "application/json" })
+              res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
+              return console.log('Erro ao buscar os dados.');
+            }
+
+            res.writeHead(200, { "Content-Type": "application/json" })
+            res.end(JSON.stringify(jsonData[index]))
+          })
+        })
+      })
+
     } else if (method === 'DELETE' && url.startsWith('/empregados/')) {
-      console.log('DELETE /empregados/{id} 🏌️🤸‍♂️')
+      console.log('DELETE /empregados/{id} 🏌️💫')
       res.end();
     }
   });

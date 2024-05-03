@@ -17,12 +17,12 @@
   },
   {
     "nome": "Luiz Carlos",
-    "cargo": "Aprendiz",
+    "cargo": "Desenvolvedor",
     "cpf": "123.456.789-00",
     "email": "luiz@example.com",
     "telefone": "(82) 91123-5813",
     "data_contratacao": "2024-04-29",
-    "salario": 2000,
+    "salario": 3000,
     "habilidades": [
       "Front-End",
       "Back-End",

@@ -22,38 +22,39 @@ const server = http.createServer((req, res) => {
       console.error('Erro ao ler o arquivo jsonData =>' + error)
     }
 
+    const writeResponseJSON = (sttCode, output = '') => {
+      res.writeHead(sttCode, { "Content-Type": "application/json" }) 
+
+      if (sttCode === 500) {
+        res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
+        return console.log('Erro ao buscar os dados.');
+      }
+
+      res.end(JSON.stringify(output))
+      return console.log('Operação finalizada com sucesso!');
+    }
+
     if (method === 'GET' && url === '/empregados') {
       console.log('GET /empregados 👨‍💼👩‍💼');
 
       fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
-        if (err) {
-          res.writeHead(500, { "Content-Type": "application/json" })
-          res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
-          return console.log('Erro ao buscar os dados.');
-        }
+        if (err) writeResponseJSON(500)
 
         const jsonData = JSON.parse(data)
-        res.writeHead(200, { "Content-Type": "application/json" })
-        res.end(JSON.stringify(jsonData));
-      })
 
-      console.log('Operação finalizada com sucesso!');
+        writeResponseJSON(200, jsonData)
+      });
+
     } else if (method === 'GET' && url === '/empregados/count') {
       console.log('GET /empregados/count 🧍🧍🧍');
 
       fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
-        if (err) {
-          res.writeHead(500, {"Content-Type": "application/json"})
-          res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
-          return console.log('Erro ao buscar os dados.');
-        }
+        if (err) writeResponseJSON(500)
 
         const jsonData = JSON.parse(data)
         const dataLength = jsonData.length;
 
-        res.writeHead(200, {"Content-Type": "application/json"})
-        res.end(JSON.stringify({ quantidade: dataLength }))
-        return console.log('Operação finalizada com sucesso!');
+        writeResponseJSON(200, { quantidade: dataLength })
       })
 
     } else if (method === 'GET' && url.startsWith('/empregados/porCargo/')) {
@@ -63,24 +64,18 @@ const server = http.createServer((req, res) => {
       console.log(`Work: ${work}`);
 
       fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
-        if (err) {
-          res.writeHead(500, { "Content-Type": "application/json" })
-          res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
-        }
+        if (err) writeResponseJSON(500)
 
         const jsonData = JSON.parse(data)
         const empByWork = jsonData.filter((emp) => emp.cargo === work);
 
         if (empByWork.length === 0) {
-          res.writeHead(404, { "Content-Type": "application/json" })
-          res.end(JSON.stringify({ 
+          writeResponseJSON(404, { 
             message: 'Nenhum funcionário com este cargo foi encontrado.' 
-          }))
-          return;
+          });
         }
 
-        res.writeHead(200, { "Content-Type": "application/json" })
-        res.end(JSON.stringify(empByWork))
+        writeResponseJSON(200, empByWork)
       })
 
     } else if (method === 'GET' && url.startsWith('/empregados/porHabilidade/')) {
@@ -90,10 +85,7 @@ const server = http.createServer((req, res) => {
       console.log(`Skill: ${skill}`);
 
       fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
-        if (err) {
-          res.writeHead(500, { "Content-Type": "application/json" })
-          res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
-        }
+        if (err) if (err) writeResponseJSON(500)
 
         const jsonData = JSON.parse(data)
         const empBySkill = jsonData.filter((emp) => {
@@ -102,15 +94,13 @@ const server = http.createServer((req, res) => {
         });
 
         if (empBySkill.length === 0) {
-          res.writeHead(404, { "Content-Type": "application/json" })
-          res.end(JSON.stringify({ 
+          writeResponseJSON(404, { 
             message: 'Nenhum funcionário com esta habilidade foi encontrado.' 
-          }))
+          })
           return;
         }
 
-        res.writeHead(200, { "Content-Type": "application/json" })
-        res.end(JSON.stringify(empBySkill))
+        writeResponseJSON(200, empBySkill)
       })
 
     } else if (method === 'GET' && url.startsWith('/empregados/porFaixaSalarial')) {
@@ -126,10 +116,7 @@ const server = http.createServer((req, res) => {
       console.log(`Minimal pay: ${minPay} \nMaximum pay: ${maxPay}`)
 
       fs.readFile('funcionarios.json', 'utf-8', (err, data) => {
-        if (err) {
-          res.writeHead(500, {"Content-Type": "application/json"})
-          res.end(JSON.stringify({ message: 'Erro ao buscar os dados.' }))
-        }
+        if (err) writeResponseJSON(500)
 
         const jsonData = JSON.parse(data);
         const empOnRange = jsonData.filter(
@@ -139,15 +126,13 @@ const server = http.createServer((req, res) => {
         );
 
         if (empOnRange.length === 0) {
-          res.writeHead(404, { "Content-Type": "application/json" })
-          res.end(JSON.stringify({ 
+          writeResponseJSON(404, { 
             message: 'Nenhum funcionário nesta faixa salarial foi encontrado.' 
-          }))
+          })
           return;
         }
 
-        res.writeHead(200, { "Content-Type": "application/json" })
-        res.end(JSON.stringify(empOnRange))
+        writeResponseJSON(200, empOnRange)
       });
 
     } else if (method === 'GET' && url.startsWith('/empregados/')) {

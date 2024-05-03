@@ -26,8 +26,7 @@
     "habilidades": [
       "Front-End",
       "Back-End",
-      "Docker",
-      "SQL"
+      "Ruby"
     ],
     "id": 2
   },
@@ -40,9 +39,9 @@
     "data_contratacao": "2024-04-29",
     "salario": 2000,
     "habilidades": [
-      "Python",
       "Back-End",
       "SQL",
+      "Ruby",
       "Marketing"
     ],
     "id": 3
